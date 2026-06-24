@@ -92,7 +92,7 @@ export default function Toolbar({
             onChange={(e) => setValue(e.target.value)}
             onFocus={(e) => e.target.select()}
             onKeyDown={onKeyDown}
-            placeholder="Search Google or type a URL"
+            placeholder="Search the web or type a URL"
             spellCheck={false}
             autoComplete="off"
             className="w-full bg-transparent text-sm text-white outline-none placeholder:text-[var(--color-muted)]"

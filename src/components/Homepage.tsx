@@ -36,7 +36,7 @@ export default function Homepage({ onNavigate, inputRef }: Props) {
               value={value}
               onChange={(e) => setValue(e.target.value)}
               onKeyDown={(e) => e.key === "Escape" && e.currentTarget.blur()}
-              placeholder="Search Google or type a URL"
+              placeholder="Search the web or type a URL"
               spellCheck={false}
               autoComplete="off"
               className="w-full bg-transparent text-base text-white outline-none placeholder:text-[var(--color-muted)]"

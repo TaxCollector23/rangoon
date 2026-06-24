@@ -40,6 +40,28 @@ declare global {
 // Scramjet rewrites every proxied URL under this path prefix.
 const PREFIX = "/scramjet/";
 
+const DEFAULT_WISP = "wss://anura.pro/";
+const WISP_KEY = "wisp-url";
+
+/** Resolve the wisp egress server. Priority: ?wisp= query param (persisted) >
+ *  localStorage > build-time env > default. Letting it be overridden at runtime
+ *  means a different egress IP can be chosen without rebuilding — useful when a
+ *  shared server's IP gets flagged (e.g. Google captcha). */
+export function getWispUrl(): string {
+  try {
+    const param = new URLSearchParams(location.search).get("wisp");
+    if (param) {
+      localStorage.setItem(WISP_KEY, param);
+      return param;
+    }
+    const stored = localStorage.getItem(WISP_KEY);
+    if (stored) return stored;
+  } catch {
+    /* SSR / storage disabled — fall through */
+  }
+  return import.meta.env.VITE_WISP_URL?.trim() || DEFAULT_WISP;
+}
+
 let controller: ScramjetController | null = null;
 let readyPromise: Promise<void> | null = null;
 
@@ -71,9 +93,8 @@ export function initScramjet(): Promise<void> {
 
     // The wisp server performs the actual network egress. It is the only remote
     // dependency; the engine itself is bundled and served same-origin.
-    const wisp = import.meta.env.VITE_WISP_URL?.trim() || "wss://anura.pro/";
     const connection = new window.BareMux.BareMuxConnection("/baremux/worker.js");
-    await connection.setTransport("/epoxy/index.mjs", [{ wisp }]);
+    await connection.setTransport("/epoxy/index.mjs", [{ wisp: getWispUrl() }]);
   })();
 
   return readyPromise;

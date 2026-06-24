@@ -19,8 +19,11 @@ export function resolveInput(raw: string): string {
 
   if (looksLikeHost) return `https://${input}`;
 
-  // Otherwise: Google search.
-  return `https://www.google.com/search?q=${encodeURIComponent(input)}`;
+  // Otherwise: a web search. We use DuckDuckGo rather than Google because
+  // Google blocks shared proxy/datacenter egress IPs with a captcha ("unusual
+  // traffic"), which every public wisp server trips. DuckDuckGo proxies
+  // cleanly, so search actually works through Scramjet.
+  return `https://duckduckgo.com/?q=${encodeURIComponent(input)}`;
 }
 
 /** A compact, human-friendly label for a URL (used as a tab title). */
@@ -28,7 +31,8 @@ export function prettyTitle(url: string): string {
   if (!url) return "New Tab";
   try {
     const u = new URL(url);
-    if (u.hostname === "www.google.com" && u.pathname === "/search") {
+    // Show the query itself for search-result pages.
+    if (/(^|\.)duckduckgo\.com$/.test(u.hostname) || u.pathname === "/search") {
       const q = u.searchParams.get("q");
       if (q) return q;
     }
