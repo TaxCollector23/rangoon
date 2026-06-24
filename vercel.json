@@ -8,27 +8,5 @@
         { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
       ]
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/scram/:path*",
-      "destination": "https://YOUR-SCRAMJET-BACKEND.example.com/scram/:path*"
-    },
-    {
-      "source": "/baremux/:path*",
-      "destination": "https://YOUR-SCRAMJET-BACKEND.example.com/baremux/:path*"
-    },
-    {
-      "source": "/epoxy/:path*",
-      "destination": "https://YOUR-SCRAMJET-BACKEND.example.com/epoxy/:path*"
-    },
-    {
-      "source": "/baremod/:path*",
-      "destination": "https://YOUR-SCRAMJET-BACKEND.example.com/baremod/:path*"
-    },
-    {
-      "source": "/libcurl/:path*",
-      "destination": "https://YOUR-SCRAMJET-BACKEND.example.com/libcurl/:path*"
-    }
   ]
 }

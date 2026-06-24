@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  readonly VITE_SCRAMJET_URL: string;
+  readonly VITE_WISP_URL: string;
 }
 
 interface ImportMeta {

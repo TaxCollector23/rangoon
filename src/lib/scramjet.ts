@@ -41,12 +41,11 @@ export function initScramjet(): Promise<void> {
     await controller.init();
     await navigator.serviceWorker.register("/sw.js");
 
+    // The wisp server performs the actual network egress. Everything else is
+    // bundled and served same-origin, so this URL is the only remote piece.
+    const wisp = import.meta.env.VITE_WISP_URL?.trim() || "wss://anura.pro/";
+
     const connection = new window.BareMux.BareMuxConnection("/baremux/worker.js");
-    const wisp =
-      (location.protocol === "https:" ? "wss" : "ws") +
-      "://" +
-      location.host +
-      "/wisp/";
     await connection.setTransport("/epoxy/index.mjs", [{ wisp }]);
   })();
 

@@ -7,3 +7,9 @@ dist-ssr
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.vercel
+
+# Scramjet engine assets copied from node_modules at build time.
+public/scram
+public/baremux
+public/epoxy
