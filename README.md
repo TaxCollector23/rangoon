@@ -42,6 +42,17 @@ VITE_WISP_URL=wss://anura.pro/
 ```
 
 Point it at your own wisp server if you'd rather not rely on the public one.
+You can also override it at runtime without rebuilding by appending
+`?wisp=wss://your-server/` to the URL (it's persisted to `localStorage`).
+
+### Search engine
+
+Typed queries go to **DuckDuckGo**. Google is intentionally avoided: it serves
+an "unusual traffic" captcha to every shared proxy / datacenter egress IP (which
+all public wisp servers use), so Google search never actually works through the
+proxy. DuckDuckGo proxies cleanly. To use Google anyway, just type `google.com`
+as a URL — or run your own wisp server on a clean IP and point `VITE_WISP_URL`
+at it.
 
 ## Running
 
