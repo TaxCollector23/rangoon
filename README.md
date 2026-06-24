@@ -19,49 +19,58 @@ nothing else. No news feeds, widgets, bookmarks, sidebars, or accounts.
   content area. The app shell never redirects away.
 - **Responsive** — works on desktop and mobile.
 
-## Requirements
+## How it works
 
-You need a running Scramjet backend (the self-hosted Scramjet server that serves
-`/scram`, `/baremux`, `/epoxy`, and the `/wisp` transport). The default Scramjet
-dev server listens on `http://localhost:1337`.
+There is **no separate backend to run**. The Scramjet engine, bare-mux, and the
+epoxy transport are pulled from npm and copied into `public/` at build time
+(`scripts/copy-scramjet-assets.mjs`), so they are served **same-origin** by the
+app itself. This is what makes the service worker and cross-origin isolation
+work without a reverse proxy.
+
+The only remote dependency is the **wisp server**, which performs the actual
+network egress over a WebSocket. It defaults to the public `wss://anura.pro/`
+server (the same one the official Scramjet demo uses).
 
 ## Configuration
 
-A single environment variable points the UI at your backend:
+A single environment variable selects the wisp server:
 
 ```bash
 cp .env.example .env
-# edit .env:
-VITE_SCRAMJET_URL=http://localhost:1337
+# .env:
+VITE_WISP_URL=wss://anura.pro/
 ```
 
-During development, Vite proxies all Scramjet runtime and transport paths to this
-URL so that everything is served same-origin (required for the service worker and
-cross-origin isolation).
+Point it at your own wisp server if you'd rather not rely on the public one.
 
 ## Running
 
 ```bash
-npm install
+npm install   # also copies the engine assets into public/
 npm run dev
 ```
 
-Then open http://localhost:3000.
+Then open http://localhost:3000. No backend needed.
 
-> Make sure your Scramjet backend (`VITE_SCRAMJET_URL`) is running first.
-
-## Production build
+## Production build / deploy
 
 ```bash
 npm run build
 npm run preview
 ```
 
-For production you must serve the app with the same Scramjet paths reachable
-same-origin (e.g. behind a reverse proxy that forwards `/scram`, `/baremux`,
-`/epoxy`, `/baremod`, `/bare`, and `/wisp` to your Scramjet backend) and send the
-`Cross-Origin-Opener-Policy: same-origin` and
-`Cross-Origin-Embedder-Policy: require-corp` headers.
+The app is a static site. The only server requirement is that it send the
+cross-origin isolation headers — already configured for Vercel in
+[`vercel.json`](./vercel.json):
+
+```
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
+```
+
+> **Version note:** Scramjet v1.1.0 must be paired with `bare-mux@2.1.7` and
+> `epoxy-transport@2.1.28`. epoxy v3 changed its request interface and throws
+> `headers is not iterable` with this Scramjet version, so these are pinned.
 
 ## Project structure
 
