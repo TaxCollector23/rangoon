@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, type RefObject } from "react";
 import { Search } from "./icons";
 import { resolveInput } from "../lib/url";
 
 interface Props {
   onNavigate: (url: string) => void;
+  inputRef?: RefObject<HTMLInputElement>;
 }
 
 /** The distraction-free homepage: a title and one large centered search bar. */
-export default function Homepage({ onNavigate }: Props) {
+export default function Homepage({ onNavigate, inputRef }: Props) {
   const [value, setValue] = useState("");
 
   function submit(e: React.FormEvent) {
@@ -30,9 +31,11 @@ export default function Homepage({ onNavigate }: Props) {
           <div className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4 shadow-lg shadow-black/40 transition-all duration-300 focus-within:border-white/30 focus-within:bg-[var(--color-surface-hover)] focus-within:shadow-black/60">
             <Search className="shrink-0 text-[var(--color-muted)] transition-colors group-focus-within:text-white" />
             <input
+              ref={inputRef}
               autoFocus
               value={value}
               onChange={(e) => setValue(e.target.value)}
+              onKeyDown={(e) => e.key === "Escape" && e.currentTarget.blur()}
               placeholder="Search Google or type a URL"
               spellCheck={false}
               autoComplete="off"

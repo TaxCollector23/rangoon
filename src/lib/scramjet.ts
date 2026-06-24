@@ -1,35 +1,63 @@
-/* Thin wrapper around the Scramjet client runtime.
+/* ─────────────────────────────────────────────────────────────────────────
+ * Scramjet engine layer.
  *
- * The runtime globals ($scramjetLoadController, BareMux) are loaded from the
- * backend in index.html. Everything here is same-origin: the service worker,
- * the runtime assets, and the wisp transport are all reached through Vite's
- * proxy, which forwards to VITE_SCRAMJET_URL. */
+ * This is the ONLY module that talks to Scramjet internals. Everything else in
+ * the app (components, hooks) is UI and goes through the small surface exported
+ * here. Keeping the boundary here means Scramjet can be upgraded without
+ * touching the UI layer.
+ *
+ * Integration points with Scramjet:
+ *   - window.$scramjetLoadController()  → the controller factory (from the
+ *     runtime bundle loaded in index.html, served same-origin from /scram).
+ *   - controller.init()                 → boots the engine + rewriter wasm.
+ *   - navigator.serviceWorker(/sw.js)   → the Scramjet service worker that
+ *     intercepts and proxies requests.
+ *   - BareMux + epoxy transport         → carries traffic to the wisp server.
+ *   - controller.createFrame()          → official ScramjetFrame abstraction
+ *     used for all website rendering and navigation.
+ * ───────────────────────────────────────────────────────────────────────── */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type {
+  ScramjetController,
+  ScramjetFrame,
+  ScramjetInitConfig,
+} from "@mercuryworkshop/scramjet";
+
+// The runtime bundle (loaded via <script> in index.html) attaches these globals.
 declare global {
   interface Window {
-    $scramjetLoadController: () => { ScramjetController: any };
-    BareMux: { BareMuxConnection: new (worker: string) => any };
+    $scramjetLoadController: () => {
+      ScramjetController: new (config: Partial<ScramjetInitConfig>) => ScramjetController;
+    };
+    BareMux: {
+      BareMuxConnection: new (worker: string) => {
+        setTransport: (path: string, options: unknown[]) => Promise<void>;
+      };
+    };
   }
 }
 
-let controller: any = null;
+// Scramjet rewrites every proxied URL under this path prefix.
+const PREFIX = "/scramjet/";
+
+let controller: ScramjetController | null = null;
 let readyPromise: Promise<void> | null = null;
 
-/** Initialise the Scramjet controller, register the service worker, and wire
- *  up the wisp transport. Idempotent — safe to await repeatedly. */
+/** Boot the engine, register the service worker, and wire up the transport.
+ *  Idempotent — safe to await repeatedly; only runs once. */
 export function initScramjet(): Promise<void> {
   if (readyPromise) return readyPromise;
 
   readyPromise = (async () => {
-    if (!window.$scramjetLoadController) {
+    if (typeof window.$scramjetLoadController !== "function") {
       throw new Error(
-        "Scramjet runtime not found. Is the backend (VITE_SCRAMJET_URL) running?"
+        "Scramjet runtime not found — engine assets are missing from /scram."
       );
     }
 
     const { ScramjetController } = window.$scramjetLoadController();
     controller = new ScramjetController({
+      prefix: PREFIX,
       files: {
         wasm: "/scram/scramjet.wasm.wasm",
         all: "/scram/scramjet.all.js",
@@ -41,10 +69,9 @@ export function initScramjet(): Promise<void> {
     await controller.init();
     await navigator.serviceWorker.register("/sw.js");
 
-    // The wisp server performs the actual network egress. Everything else is
-    // bundled and served same-origin, so this URL is the only remote piece.
+    // The wisp server performs the actual network egress. It is the only remote
+    // dependency; the engine itself is bundled and served same-origin.
     const wisp = import.meta.env.VITE_WISP_URL?.trim() || "wss://anura.pro/";
-
     const connection = new window.BareMux.BareMuxConnection("/baremux/worker.js");
     await connection.setTransport("/epoxy/index.mjs", [{ wisp }]);
   })();
@@ -52,13 +79,14 @@ export function initScramjet(): Promise<void> {
   return readyPromise;
 }
 
-/** Encode a real URL into a same-origin proxied URL for an <iframe src>. */
-export function encodeUrl(url: string): string {
+/** Create a managed Scramjet frame (official ScramjetFrame abstraction).
+ *  The caller owns mounting `frame.frame` into the DOM. */
+export function createFrame(): ScramjetFrame {
   if (!controller) throw new Error("Scramjet not initialised");
-  return controller.encodeUrl(url);
+  return controller.createFrame();
 }
 
-/** Decode a proxied URL back into the real URL it represents. */
+/** Decode a proxified URL back into the real URL it represents. */
 export function decodeUrl(url: string): string {
   if (!controller) return url;
   try {
@@ -67,3 +95,12 @@ export function decodeUrl(url: string): string {
     return url;
   }
 }
+
+/** Normalise a URL coming out of a Scramjet event to the real, user-facing URL.
+ *  ScramjetFrame events may report either the real or the proxified URL. */
+export function toRealUrl(url: string): string {
+  if (!url) return "";
+  return url.includes(PREFIX) ? decodeUrl(url) : url;
+}
+
+export type { ScramjetFrame };

@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useBrowser } from "./hooks/useBrowser";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { initScramjet } from "./lib/scramjet";
 import TabBar from "./components/TabBar";
 import Toolbar from "./components/Toolbar";
@@ -11,6 +12,7 @@ export default function App() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const addressRef = useRef<HTMLInputElement>(null);
 
   // Boot the Scramjet engine once.
   useEffect(() => {
@@ -18,6 +20,21 @@ export default function App() {
       .then(() => setReady(true))
       .catch((e) => setError(e?.message ?? String(e)));
   }, []);
+
+  const focusAddress = useCallback(() => {
+    const el = addressRef.current;
+    if (el) {
+      el.focus();
+      el.select();
+    }
+  }, []);
+  const closeActive = useCallback(() => b.closeTab(b.activeId), [b]);
+
+  useKeyboardShortcuts({
+    onFocusAddress: focusAddress,
+    onNewTab: b.newTab,
+    onCloseTab: closeActive,
+  });
 
   const browsing = b.activeTab.url !== "";
 
@@ -42,13 +59,14 @@ export default function App() {
             onRefresh={() => setReloadKey((k) => k + 1)}
             onHome={b.goHome}
             onNavigate={b.navigate}
+            inputRef={addressRef}
           />
         )}
       </header>
 
       <main className="relative flex-1 overflow-hidden">
         {/* Homepage for the active tab when it has no URL yet. */}
-        {!browsing && <Homepage onNavigate={b.navigate} />}
+        {!browsing && <Homepage onNavigate={b.navigate} inputRef={addressRef} />}
 
         {/* Persistent proxied frames for all browsing tabs. */}
         <div className={browsing ? "h-full w-full" : "hidden"}>
@@ -57,7 +75,7 @@ export default function App() {
             activeId={b.activeId}
             ready={ready}
             reloadKey={reloadKey}
-            onInPageNavigate={b.recordNavigation}
+            onUrlChange={b.recordNavigation}
           />
         </div>
 

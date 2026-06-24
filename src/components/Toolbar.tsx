@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import { ArrowLeft, ArrowRight, Refresh, Home, Search } from "./icons";
 import { resolveInput } from "../lib/url";
 
@@ -11,6 +11,7 @@ interface Props {
   onRefresh: () => void;
   onHome: () => void;
   onNavigate: (url: string) => void;
+  inputRef?: RefObject<HTMLInputElement>;
 }
 
 function IconButton({
@@ -47,6 +48,7 @@ export default function Toolbar({
   onRefresh,
   onHome,
   onNavigate,
+  inputRef,
 }: Props) {
   const [value, setValue] = useState(url);
 
@@ -57,6 +59,13 @@ export default function Toolbar({
     e.preventDefault();
     const next = resolveInput(value);
     if (next) onNavigate(next);
+  }
+
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Escape") {
+      setValue(url); // discard edits
+      e.currentTarget.blur();
+    }
   }
 
   return (
@@ -78,9 +87,11 @@ export default function Toolbar({
         <div className="flex items-center gap-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 transition-colors focus-within:border-white/30 focus-within:bg-[var(--color-surface-hover)]">
           <Search width={15} height={15} className="shrink-0 text-[var(--color-muted)]" />
           <input
+            ref={inputRef}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onFocus={(e) => e.target.select()}
+            onKeyDown={onKeyDown}
             placeholder="Search Google or type a URL"
             spellCheck={false}
             autoComplete="off"
