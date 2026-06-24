@@ -49,24 +49,24 @@ export default function App() {
           onClose={b.closeTab}
           onNew={b.newTab}
         />
-        {browsing && (
-          <Toolbar
-            url={b.activeTab.url}
-            canGoBack={b.canGoBack}
-            canGoForward={b.canGoForward}
-            onBack={b.goBack}
-            onForward={b.goForward}
-            onRefresh={() => setReloadKey((k) => k + 1)}
-            onHome={b.goHome}
-            onNavigate={b.navigate}
-            inputRef={addressRef}
-          />
-        )}
+        {/* The address bar is always present at the top, like a real browser. */}
+        <Toolbar
+          url={b.activeTab.url}
+          browsing={browsing}
+          canGoBack={b.canGoBack}
+          canGoForward={b.canGoForward}
+          onBack={b.goBack}
+          onForward={b.goForward}
+          onRefresh={() => setReloadKey((k) => k + 1)}
+          onHome={b.goHome}
+          onNavigate={b.navigate}
+          inputRef={addressRef}
+        />
       </header>
 
       <main className="relative flex-1 overflow-hidden">
         {/* Homepage for the active tab when it has no URL yet. */}
-        {!browsing && <Homepage onNavigate={b.navigate} inputRef={addressRef} />}
+        {!browsing && <Homepage onNavigate={b.navigate} />}
 
         {/* Persistent proxied frames for all browsing tabs. */}
         <div className={browsing ? "h-full w-full" : "hidden"}>

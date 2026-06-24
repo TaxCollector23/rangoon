@@ -4,6 +4,8 @@ import { resolveInput } from "../lib/url";
 
 interface Props {
   url: string;
+  /** Whether the active tab currently shows a page (vs. the new-tab screen). */
+  browsing: boolean;
   canGoBack: boolean;
   canGoForward: boolean;
   onBack: () => void;
@@ -41,6 +43,7 @@ function IconButton({
  *  combined address + search field. */
 export default function Toolbar({
   url,
+  browsing,
   canGoBack,
   canGoForward,
   onBack,
@@ -76,10 +79,10 @@ export default function Toolbar({
       <IconButton label="Forward" onClick={onForward} disabled={!canGoForward}>
         <ArrowRight />
       </IconButton>
-      <IconButton label="Refresh" onClick={onRefresh}>
+      <IconButton label="Refresh" onClick={onRefresh} disabled={!browsing}>
         <Refresh />
       </IconButton>
-      <IconButton label="Home" onClick={onHome}>
+      <IconButton label="Home" onClick={onHome} disabled={!browsing}>
         <Home />
       </IconButton>
 
@@ -92,7 +95,7 @@ export default function Toolbar({
             onChange={(e) => setValue(e.target.value)}
             onFocus={(e) => e.target.select()}
             onKeyDown={onKeyDown}
-            placeholder="Search the web or type a URL"
+            placeholder="Search Google or type a URL"
             spellCheck={false}
             autoComplete="off"
             className="w-full bg-transparent text-sm text-white outline-none placeholder:text-[var(--color-muted)]"
